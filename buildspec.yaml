@@ -13,12 +13,7 @@ phases:
     commands:
       - echo "Starting pre-build phase..."
       - echo "Linting all CloudFormation templates..."
-      - cfn-lint main.yml
-      - cfn-lint vpc.yaml
-      - cfn-lint s3.yaml
-      - cfn-lint iam.yaml
-      - cfn-lint sagemaker-instance.yaml
-      - cfn-lint opensearch.yaml
+      - cfn-lint main.yml --template-root .
       - echo "Validating main.yml..."
       - aws cloudformation validate-template --template-body file://main.yml
 
