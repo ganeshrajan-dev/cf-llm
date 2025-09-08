@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: SageMaker Studio Domain, JupyterLab Space, and Notebook Instance in Private Subnet
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: llm-domain
+  RoleArn:
+    Type: String
+    Description: Execution role ARN for SageMaker
+  VpcId:
+    Type: String
+    Description: VPC ID from main stack
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of private subnet IDs from main stack
+  SecurityGroupId:
+    Type: String
+    Description: Security group ID for SageMaker
+  NotebookInstanceName:
+    Type: String
+    Description: Name of the SageMaker Notebook Instance
+  InstanceType:
+    Type: String
+    Description: Instance type for the Notebook Instance
+  JupyterLabInstanceType:
+    Type: String
+    Default: ml.t3.medium
+    Description: Instance type for the JupyterLab Space
+  JupyterLabImageArn:
+    Type: String
+    Default: arn:aws:sagemaker:us-east-1:885854791233:image/sagemaker-distribution-cpu
+    Description: SageMaker Image ARN for JupyterLab
+
+Resources:
+  SageMakerDomain:
+    Type: AWS::SageMaker::Domain
+    Properties:
+      DomainName: !Ref DomainName
+      AuthMode: IAM
+      VpcId: !Ref VpcId
+      SubnetIds: !Ref PrivateSubnetIds
+      AppNetworkAccessType: VpcOnly
+      DefaultUserSettings:
+        ExecutionRole: !Ref RoleArn
+        SecurityGroups:
+          - !Ref SecurityGroupId
+      DefaultSpaceSettings:
+        ExecutionRole: !Ref RoleArn
+        SecurityGroups:
+          - !Ref SecurityGroupId
+        JupyterLabAppSettings:
+          DefaultResourceSpec:
+            InstanceType: !Ref JupyterLabInstanceType
+            SageMakerImageArn: !Ref JupyterLabImageArn
+
+  SageMakerUserProfile:
+    Type: AWS::SageMaker::UserProfile
+    Properties:
+      DomainId: !GetAtt SageMakerDomain.DomainId
+      UserProfileName: default-user
+      UserSettings:
+        ExecutionRole: !Ref RoleArn
+
+  MyJupyterLabSpace:
+    Type: AWS::SageMaker::Space
+    DependsOn:
+      - SageMakerDomain
+    Properties:
+      DomainId: !GetAtt SageMakerDomain.DomainId
+      SpaceName: MyJupyterLabSpace
+      SpaceDisplayName: My JupyterLab Space
+      SpaceSettings:
+        AppType: JupyterLab
+        JupyterLabAppSettings:
+          DefaultResourceSpec:
+            InstanceType: !Ref JupyterLabInstanceType
+            SageMakerImageArn: !Ref JupyterLabImageArn
+
+  SageMakerJupyterApp:
+    Type: AWS::SageMaker::App
+    DependsOn:
+      - SageMakerDomain
+      - SageMakerUserProfile
+    Properties:
+      AppName: default-jupyter
+      AppType: JupyterServer
+      DomainId: !GetAtt SageMakerDomain.DomainId
+      UserProfileName: default-user
+
+  SageMakerNotebookInstance:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      NotebookInstanceName: !Ref NotebookInstanceName
+      InstanceType: !Ref InstanceType
+      RoleArn: !Ref RoleArn
+      SubnetId: !Select [0, !Ref PrivateSubnetIds]
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+
+Outputs:
+  DomainId:
+    Value: !GetAtt SageMakerDomain.DomainId
+  UserProfileName:
+    Value: !Ref SageMakerUserProfile
+  JupyterLabSpaceName:
+    Value: MyJupyterLabSpace
+  NotebookInstanceName:
+    Value: !Ref SageMakerNotebookInstance

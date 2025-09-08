@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: OpenSearch Domain
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: my-opensearch
+  InstanceType:
+    Type: String
+    Default: t3.small.search
+
+Resources:
+  MyOpenSearch:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: !Ref DomainName
+      EngineVersion: OpenSearch_2.11
+      ClusterConfig:
+        InstanceType: !Ref InstanceType
+        InstanceCount: 1
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10
+
+Outputs:
+  DomainEndpoint:
+    Value: !GetAtt MyOpenSearch.DomainEndpoint

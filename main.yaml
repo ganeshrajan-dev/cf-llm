@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Main stack for VPC, S3, SageMaker, OpenSearch, IAM
+
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cloudformation-template-llm.s3.us-east-1.amazonaws.com/template/vpc.yaml
+
+  S3Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cloudformation-template-llm.s3.us-east-1.amazonaws.com/template/s3.yaml
+      Parameters:
+        BucketName: llm-bucket-0101040018
+
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cloudformation-template-llm.s3.us-east-1.amazonaws.com/template/IAM.yaml
+      Parameters:
+        BucketName: llm-bucket-0101040018
+
+  SageMakerStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - VPCStack
+      - IAMStack
+    Properties:
+      TemplateURL: https://cloudformation-template-llm.s3.us-east-1.amazonaws.com/template/sagemaker-instance.yaml
+      Parameters:
+        RoleArn: !GetAtt IAMStack.Outputs.RoleArn
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        PrivateSubnetIds: !GetAtt VPCStack.Outputs.PrivateSubnetIds
+        SecurityGroupId: !GetAtt VPCStack.Outputs.SecurityGroupId
+        NotebookInstanceName: llm-notebook
+        InstanceType: ml.t3.medium
+
+
+  OpenSearchStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cloudformation-template-llm.s3.us-east-1.amazonaws.com/template/opensearch.yaml
+      Parameters:
+        DomainName: llm-opensearch
