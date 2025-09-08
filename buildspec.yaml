@@ -1,0 +1,41 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing cfn-lint..."
+      - pip install --upgrade cfn-lint
+      - echo "AWS CLI is already available in CodeBuild environment"
+
+  pre_build:
+    commands:
+      - echo "Starting pre-build phase..."
+      - echo "Linting all CloudFormation templates..."
+      - cfn-lint main.yml
+      - cfn-lint vpc.yaml
+      - cfn-lint s3.yaml
+      - cfn-lint iam.yaml
+      - cfn-lint sagemaker-instance.yaml
+      - cfn-lint opensearch.yaml
+      - echo "Validating main.yml..."
+      - aws cloudformation validate-template --template-body file://main.yml
+
+  build:
+    commands:
+      - echo "Packaging templates..."
+      - aws cloudformation package \
+          --template-file main.yml \
+          --s3-bucket my-artifact-bucket \
+          --output-template-file output.yml
+      - echo "Deploying Dev stack..."
+      - aws cloudformation deploy \
+          --template-file output.yml \
+          --stack-name cf-llm-dev \
+          --capabilities CAPABILITY_NAMED_IAM
+      - echo "Build and Dev deployment completed successfully."
+
+artifacts:
+  files:
+    - output.yml
