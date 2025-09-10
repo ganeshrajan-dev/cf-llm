@@ -16,7 +16,7 @@ phases:
       - echo "Starting pre-build phase..."
       - echo "Linting all CloudFormation templates..."
       - echo "Validating main.yml..."
-      - aws cloudformation validate-template --template-body file://main.yml
+      - aws cloudformation validate-template --template-body file://main.yaml
 
   build:
     commands:
@@ -35,6 +35,7 @@ phases:
 artifacts:
   files:
     - output.yml
+
 
 
 
