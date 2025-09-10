@@ -22,7 +22,7 @@ phases:
     commands:
       - echo "Packaging templates..."
       - aws cloudformation package \
-          --template-file main.yml \
+          --template-file main.yaml \
           --s3-bucket my-artifact-bucket \
           --output-template-file output.yml
       - echo "Deploying Dev stack..."
@@ -35,5 +35,6 @@ phases:
 artifacts:
   files:
     - output.yml
+
 
 
