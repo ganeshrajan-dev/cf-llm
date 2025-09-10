@@ -1,41 +1,39 @@
 version: 0.2
 
+env:
+  variables:
+    TEMPLATE_PATH: main.yaml
+    ARTIFACT_BUCKET: my-artifact-bucket
+    STACK_NAME: cf-llm-dev
+    # AWS_DEFAULT_REGION: ap-south-1  # uncomment/set if needed
+
 phases:
   install:
     runtime-versions:
       python: 3.11
     commands:
+      - set -euo pipefail
       - echo "Installing cfn-lint..."
       - pip install --upgrade cfn-lint
+      - aws --version
       - pwd
-      - ls
-      - echo "AWS CLI is already available in CodeBuild environment"
+      - ls -la
 
   pre_build:
     commands:
-      - echo "Starting pre-build phase..."
-      - echo "Linting all CloudFormation templates..."
-      - echo "Validating main.yml..."
-      - aws cloudformation validate-template --template-body file://main.yaml
+      - echo "Validating $TEMPLATE_PATH..."
+      - aws cloudformation validate-template --template-body file://"$TEMPLATE_PATH"
 
   build:
     commands:
-      - echo "Packaging templates..."
-      - aws cloudformation package \
-          --template-file main.yaml \
-          --s3-bucket my-artifact-bucket \
-          --output-template-file output.yml
+      - echo "Packaging template..."
+      - aws cloudformation package --template-file "$TEMPLATE_PATH" --s3-bucket "$ARTIFACT_BUCKET" --output-template-file output.yml
+      - echo "Validating packaged template..."
+      - aws cloudformation validate-template --template-body file://output.yml
       - echo "Deploying Dev stack..."
-      - aws cloudformation deploy \
-          --template-file output.yml \
-          --stack-name cf-llm-dev \
-          --capabilities CAPABILITY_NAMED_IAM
+      - aws cloudformation deploy --template-file output.yml --stack-name "$STACK_NAME" --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
       - echo "Build and Dev deployment completed successfully."
 
 artifacts:
   files:
     - output.yml
-
-
-
-
