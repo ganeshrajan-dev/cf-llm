@@ -7,6 +7,8 @@ phases:
     commands:
       - echo "Installing cfn-lint..."
       - pip install --upgrade cfn-lint
+      - pwd
+      - ls
       - echo "AWS CLI is already available in CodeBuild environment"
 
   pre_build:
@@ -33,4 +35,5 @@ phases:
 artifacts:
   files:
     - output.yml
+
 
